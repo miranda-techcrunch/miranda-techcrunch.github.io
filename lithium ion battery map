@@ -1,0 +1,123 @@
+library("tmap")
+library("tmaptools")
+library("sf")
+## Linking to GEOS 3.11.0, GDAL 3.5.3, PROJ 9.1.0; sf_use_s2() is TRUE
+library("leaflet")
+library(readr)
+final_map_data <- read_csv("Desktop/final_map_data.csv",show_col_types = FALSE)
+## New names:
+## • `Status` -> `Status...2`
+## • `Status` -> `Status...3`
+## • `City` -> `City...14`
+## • `Country` -> `Country...15`
+## • `City` -> `City...16`
+## • `Country` -> `Country...17`
+spec(final_map_data)
+## cols(
+##   Company = col_character(),
+##   Status...2 = col_character(),
+##   Status...3 = col_character(),
+##   `Start Date` = col_character(),
+##   `Current GWh capacity 2022` = col_double(),
+##   `2023` = col_double(),
+##   `2024` = col_double(),
+##   `2025` = col_double(),
+##   `2026` = col_double(),
+##   `2027` = col_double(),
+##   `2028` = col_double(),
+##   `2029` = col_double(),
+##   `2030` = col_double(),
+##   City...14 = col_character(),
+##   Country...15 = col_character(),
+##   City...16 = col_character(),
+##   Country...17 = col_character(),
+##   Region = col_character(),
+##   Longitude = col_double(),
+##   Latitude = col_double(),
+##   `Jittered Long` = col_double(),
+##   `Jittered Lat` = col_double()
+## )
+final_map_data$`Jittered Long`<- as.integer(as.character(final_map_data$`Jittered Long`))
+final_map_data$`Jittered Lat`<- as.integer(as.character(final_map_data$`Jittered Lat`))
+lon<- final_map_data$`Jittered Long`
+lat<- final_map_data$`Jittered Lat`
+
+spec(final_map_data)
+## cols(
+##   Company = col_character(),
+##   Status...2 = col_character(),
+##   Status...3 = col_character(),
+##   `Start Date` = col_character(),
+##   `Current GWh capacity 2022` = col_double(),
+##   `2023` = col_double(),
+##   `2024` = col_double(),
+##   `2025` = col_double(),
+##   `2026` = col_double(),
+##   `2027` = col_double(),
+##   `2028` = col_double(),
+##   `2029` = col_double(),
+##   `2030` = col_double(),
+##   City...14 = col_character(),
+##   Country...15 = col_character(),
+##   City...16 = col_character(),
+##   Country...17 = col_character(),
+##   Region = col_character(),
+##   Longitude = col_double(),
+##   Latitude = col_double(),
+##   `Jittered Long` = col_double(),
+##   `Jittered Lat` = col_double()
+## )
+final_map_data
+## # A tibble: 303 × 22
+##    Company    Statu…¹ Statu…² Start…³ Curre…⁴ `2023` `2024` `2025` `2026` `2027`
+##    <chr>      <chr>   <chr>   <chr>     <dbl>  <dbl>  <dbl>  <dbl>  <dbl>  <dbl>
+##  1 BYD        Operat… Current 2018       24       26     28     30     32     34
+##  2 Eurocell   Planned Planne… 2023        0.5     NA     NA     NA     NA     NA
+##  3 HBL Power  Planned Planned <NA>        0.5     NA     NA     NA     NA     NA
+##  4 Ford / SK… Planned Planned 2025        0.5     NA     NA     30     32     35
+##  5 Morrow Ba… Planned Planned 2024        0.5     NA      8     12     16     20
+##  6 Samsung S… Operat… Current <NA>        0.5     NA     NA     NA     NA     NA
+##  7 Tesla      Planned Planned <NA>        0.5     NA     NA     10     10     15
+##  8 Samsung S… Operat… Current <NA>        0.5     NA     NA     NA     NA     NA
+##  9 Phi4tech   Operat… Current 2022        2        3      4      5      6      7
+## 10 SAIC Moto… Operat… Curren… <NA>        0.5     NA     NA     NA     NA     NA
+## # … with 293 more rows, 12 more variables: `2028` <dbl>, `2029` <dbl>,
+## #   `2030` <dbl>, City...14 <chr>, Country...15 <chr>, City...16 <chr>,
+## #   Country...17 <chr>, Region <chr>, Longitude <dbl>, Latitude <dbl>,
+## #   `Jittered Long` <int>, `Jittered Lat` <int>, and abbreviated variable names
+## #   ¹​Status...2, ²​Status...3, ³​`Start Date`, ⁴​`Current GWh capacity 2022`
+#final_map_data$GWh <-(" GWh")
+#final_map_data$cur_con_gwh <-ifelse(final_map_data$`Current GWh capacity 2022`== 0.5, "No information available", paste(final_map_data$`Current GWh capacity 2022`,final_map_data$GWh)
+#variables for popups
+Current_Cap <-ifelse(final_map_data$`Current GWh capacity 2022`== 0.5, "No information available", final_map_data$`Current GWh capacity 2022`)
+Future_cap <- ifelse(final_map_data$`2030`== 0.5, "No information available", final_map_data$`2030`)
+#setting popup parameters
+final_map_data$label <- paste0("Company Name: ", final_map_data$Company,"<br>",
+                         "City: ",final_map_data$City...14, "<br>",
+                         "Country: ",final_map_data$Country...15, "<br>",
+                         "Status: ",final_map_data$Status...2, "<br>",
+                         "Current capacity (2022) (GWh): ",Current_Cap, "<br>",
+                         "Future capacity (2030) (GWh): ",Future_cap, "<br>")
+#loading in base maps
+m <- leaflet(final_map_data) %>% addProviderTiles(providers$CartoDB.DarkMatter, group = "Dark Mode") %>%  
+  addProviderTiles(providers$Stamen.TonerLite, group = "Light Mode") %>%
+  addEasyButton(easyButton(
+    icon="fa-globe", title="Zoom to Level 1",
+    onClick=JS("function(btn, map){ map.setZoom(1); }"))) %>%
+  addEasyButton(easyButton(
+   icon="fa-crosshairs", title="Locate Me",
+    onClick=JS("function(btn, map){ map.locate({setView: true}); }")))%>%
+  addLayersControl(
+    baseGroups = c("Light Mode","Dark Mode"),
+    options = layersControlOptions(collapsed = FALSE)) %>%
+
+#adding markers
+  addCircleMarkers(~lon, ~lat, popup=final_map_data$label, radius=final_map_data$`Current GWh capacity 2022`,  color = ~ ifelse(final_map_data$Status...2 == "Planned", "yellow", "green"), stroke = TRUE, fillOpacity = 0.8,
+                   clusterOptions = markerClusterOptions(freezeAtZoom = 6) ) %>%
+
+#adding Legend
+ addLegend("bottomright", colors= c("green", "yellow"), labels=c("Operating", "Planned"), title="Plant status") 
+## Warning in validateCoords(lng, lat, funcName): Data contains 9 rows with either
+## missing or invalid lat/lon values and will be ignored
+#calling map
+m
